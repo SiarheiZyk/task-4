@@ -5,10 +5,10 @@ export function registerGetStatus(server: McpServer, state: AirportState) {
   server.registerTool(
     'get_airport_status',
     {
-      title: 'Получить статус аэропорта',
+      title: 'Get airport status',
       description:
-        'Возвращает агрегированный статус: счётчики рейсов, использование ресурсов, ' +
-        'нерасписанные рейсы с причинами.',
+        'Returns aggregated status: flight counts, resource usage, ' +
+        'unscheduled flights with reasons.',
       inputSchema: {},
       annotations: { readOnlyHint: true },
     },
@@ -43,7 +43,7 @@ export function registerGetStatus(server: McpServer, state: AirportState) {
       const resourcePressure = {
         runways: { capacity: config.runwayCount, used: runwayUsage.size },
         gates: { capacity: config.gateCount, used: gateUsage.size },
-        groundCrew: { capacity: config.groundCrewCount },
+        groundCrew: { capacity: config.groundCrewCount, used: Math.min(schedule.length, config.groundCrewCount) },
       };
 
       const status = {

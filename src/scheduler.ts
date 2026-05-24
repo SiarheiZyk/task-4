@@ -13,6 +13,11 @@ interface GateUsage {
   freeAt: number;
 }
 
+interface CrewUsage {
+  crewId: string;
+  freeAt: number;
+}
+
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 export interface ScheduleResult {
@@ -25,13 +30,27 @@ export function generateSchedule(state: AirportState): ScheduleResult {
   const config = state.getConfig();
   const allFlights = state.getFlights().filter((f) => f.status !== 'cancelled');
 
-  // Сбрасываем состояния перед перепланированием
+  // Reset statuses before re-planning
   state.resetStatusesForReplanning();
 
-  // 1) Топологическая сортировка с tie-break
+  const scheduled: ScheduledOperation[] = [];
+  const unschedulable: Array<{ flightNumber: string; reason: string }> = [];
+  const scheduledByNum = new Map<string, ScheduledOperation>();
+
+  // 1) Topological sort with priority tie-break
   const sortedFlights = topologicalSortWithPriority(allFlights);
 
-  // 2) Инициализация ресурсов
+  // Detect circular dependencies: flights not in sorted result have cycles
+  const sortedSet = new Set(sortedFlights.map((f) => f.flightNumber));
+  for (const flight of allFlights) {
+    if (!sortedSet.has(flight.flightNumber)) {
+      const reason = 'Circular dependency detected';
+      unschedulable.push({ flightNumber: flight.flightNumber, reason });
+      state.markUnschedulable(flight.flightNumber, reason);
+    }
+  }
+
+  // 2) Initialize resources
   const runways: RunwayUsage[] = state.getRunways().map((r) => ({
     runwayId: r.id,
     lengthMeters: r.lengthMeters,
@@ -42,14 +61,14 @@ export function generateSchedule(state: AirportState): ScheduleResult {
     gateId: g.id,
     freeAt: 0,
   }));
+  const crew: CrewUsage[] = Array.from({ length: config.groundCrewCount }, (_, i) => ({
+    crewId: `CREW${String(i + 1).padStart(2, '0')}`,
+    freeAt: 0,
+  }));
 
-  const scheduled: ScheduledOperation[] = [];
-  const unschedulable: Array<{ flightNumber: string; reason: string }> = [];
-  const scheduledByNum = new Map<string, ScheduledOperation>();
-
-  // 3) Жадное размещение каждого рейса
+  // 3) Greedy placement for each flight
   for (const flight of sortedFlights) {
-    // Проверка: достаточная длина полосы?
+    // Check runway length requirement
     const requiredLen = flight.runwayRequirements?.minLengthMeters ?? 0;
     const suitableRunways = runways.filter((r) => r.lengthMeters >= requiredLen);
     if (suitableRunways.length === 0) {
@@ -59,7 +78,7 @@ export function generateSchedule(state: AirportState): ScheduleResult {
       continue;
     }
 
-    // Ранний старт: после всех зависимостей + буфер
+    // Earliest start: after all dependencies + buffer
     let earliestStart = 0;
     let depMissing = false;
     for (const depNum of flight.dependencies) {
@@ -77,16 +96,17 @@ export function generateSchedule(state: AirportState): ScheduleResult {
       continue;
     }
 
-    // Найти лучший слот среди подходящих полос
+    // Find best slot among suitable runways
     let best: ScheduledOperation | null = null;
     let bestRunway: RunwayUsage | null = null;
     let bestGate: GateUsage | null = null;
+    let bestCrew: CrewUsage | null = null;
 
     for (const rw of suitableRunways) {
       const sep = getRequiredSeparation(rw.lastOpType, flight.operationType, config);
       let startTime = Math.max(earliestStart, rw.lastEndTime + sep);
 
-      // Назначаем гейт: ранний свободный
+      // Assign gate: earliest available
       const gateCandidates = [...gates].sort(
         (a, b) => a.freeAt - b.freeAt || a.gateId.localeCompare(b.gateId),
       );
@@ -94,7 +114,15 @@ export function generateSchedule(state: AirportState): ScheduleResult {
       if (!gate) continue;
       startTime = Math.max(startTime, gate.freeAt);
 
-      // Проверка горизонта планирования
+      // Assign crew: earliest available
+      const crewCandidates = [...crew].sort(
+        (a, b) => a.freeAt - b.freeAt || a.crewId.localeCompare(b.crewId),
+      );
+      const crewMember = crewCandidates[0];
+      if (!crewMember) continue;
+      startTime = Math.max(startTime, crewMember.freeAt);
+
+      // Check planning horizon
       if (startTime + config.operationDurationSec > config.maxHorizonSec) continue;
 
       const op: ScheduledOperation = {
@@ -114,26 +142,28 @@ export function generateSchedule(state: AirportState): ScheduleResult {
         best = op;
         bestRunway = rw;
         bestGate = gate;
+        bestCrew = crewMember;
       }
     }
 
-    if (!best || !bestRunway || !bestGate) {
+    if (!best || !bestRunway || !bestGate || !bestCrew) {
       const reason = `No feasible slot within horizon`;
       unschedulable.push({ flightNumber: flight.flightNumber, reason });
       state.markUnschedulable(flight.flightNumber, reason);
       continue;
     }
 
-    // Резервируем ресурсы
+    // Reserve resources
     bestRunway.lastEndTime = best.endTime;
     bestRunway.lastOpType = flight.operationType;
     bestGate.freeAt = best.endTime + config.gateTurnaroundSec;
+    bestCrew.freeAt = best.endTime;
 
     scheduled.push(best);
     scheduledByNum.set(flight.flightNumber, best);
   }
 
-  // 4) Сохраняем результат в state
+  // 4) Save result to state
   state.setSchedule(scheduled);
 
   const makespanSec = scheduled.length ? Math.max(...scheduled.map((op) => op.endTime)) : 0;
@@ -152,7 +182,7 @@ function topologicalSortWithPriority(flights: Flight[]): Flight[] {
   }
   for (const f of flights) {
     for (const dep of f.dependencies) {
-      if (!byNum.has(dep)) continue; // зависимость от отменённого/несуществующего
+      if (!byNum.has(dep)) continue; // skip cancelled/non-existent dependency
       adj.get(dep)!.push(f.flightNumber);
       indeg.set(f.flightNumber, (indeg.get(f.flightNumber) ?? 0) + 1);
     }
@@ -213,7 +243,7 @@ export function findBottleneck(state: AirportState): BottleneckResult {
   const byNum = new Map(flights.map((f) => [f.flightNumber, f]));
   const opByNum = new Map(schedule.map((op) => [op.flightNumber, op]));
 
-  // Динамика: для каждого рейса находим самую длинную цепочку, заканчивающуюся на нём
+  // DP: for each flight find the longest dependency chain ending at it
   const memo = new Map<string, { length: number; chain: string[] }>();
 
   function dfs(num: string): { length: number; chain: string[] } {

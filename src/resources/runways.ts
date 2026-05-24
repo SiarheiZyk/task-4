@@ -6,8 +6,8 @@ export function registerRunwaysResource(server: McpServer, state: AirportState) 
     'runways',
     'atc://runways',
     {
-      title: 'Полосы аэропорта',
-      description: 'Информация о ВПП и их использовании в текущем расписании',
+      title: 'Airport runways',
+      description: 'Runway information and their usage in the current schedule',
       mimeType: 'application/json',
     },
     async (uri) => {

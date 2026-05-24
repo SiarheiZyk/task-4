@@ -6,8 +6,8 @@ export function registerFlightQueueResource(server: McpServer, state: AirportSta
     'flight-queue',
     'atc://flights/queue',
     {
-      title: 'Очередь рейсов',
-      description: 'Все рейсы с их статусами: pending, scheduled, cancelled, unschedulable',
+      title: 'Flight queue',
+      description: 'All flights grouped by status: pending, scheduled, cancelled, unschedulable',
       mimeType: 'application/json',
     },
     async (uri) => {

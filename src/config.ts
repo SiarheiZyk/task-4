@@ -10,13 +10,13 @@ const EnvSchema = z.object({
   LANDING_BUFFER_SEC: z.coerce.number().int().min(30).default(90),
   MIXED_OPS_BUFFER_SEC: z.coerce.number().int().min(30).default(180),
 
-  GATE_TURNAROUND_SEC: z.coerce.number().int().min(300).default(2700), // 45 мин
-  DEPENDENCY_BUFFER_SEC: z.coerce.number().int().min(0).default(600), // 10 мин
+  GATE_TURNAROUND_SEC: z.coerce.number().int().min(300).default(2700), // 45 min
+  DEPENDENCY_BUFFER_SEC: z.coerce.number().int().min(0).default(600), // 10 min
 
-  MAX_HORIZON_SEC: z.coerce.number().int().min(3600).default(21600), // 6 часов
+  MAX_HORIZON_SEC: z.coerce.number().int().min(3600).default(21600), // 6 hours
 
   DEFAULT_RUNWAY_LENGTH_M: z.coerce.number().int().min(1000).default(3000),
-  OPERATION_DURATION_SEC: z.coerce.number().int().min(30).default(180), // 3 мин на ВПП
+  OPERATION_DURATION_SEC: z.coerce.number().int().min(30).default(180), // 3 min on runway
 });
 
 export function loadConfig(): AirportConfig {

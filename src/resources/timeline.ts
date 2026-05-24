@@ -6,8 +6,8 @@ export function registerTimelineResource(server: McpServer, state: AirportState)
     'timeline',
     'atc://timeline',
     {
-      title: 'Хронологический таймлайн',
-      description: 'Все запланированные операции в порядке времени старта',
+      title: 'Operations timeline',
+      description: 'All scheduled operations in chronological order by start time',
       mimeType: 'application/json',
     },
     async (uri) => {

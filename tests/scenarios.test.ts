@@ -18,7 +18,7 @@ const config: AirportConfig = {
 };
 
 describe('Scenario 1: Morning Rush', () => {
-  it('расписывает 4 рейса смешанных типов с приоритетами', () => {
+  it('schedules 4 mixed flights with priorities', () => {
     const state = new AirportState(config);
     state.addFlight({
       flightNumber: 'F1',
@@ -52,7 +52,7 @@ describe('Scenario 1: Morning Rush', () => {
 });
 
 describe('Scenario 2: Heavy Hauler', () => {
-  it('блокирует рейс при отсутствии подходящей ВПП', () => {
+  it('blocks flight when no suitable runway available', () => {
     const state = new AirportState(config);
     state.addFlight({
       flightNumber: 'HV1',
@@ -75,7 +75,7 @@ describe('Scenario 2: Heavy Hauler', () => {
 });
 
 describe('Scenario 3: Connecting Flight', () => {
-  it('outbound не начинается раньше окончания inbound + буфер', () => {
+  it('outbound does not start before inbound completion + buffer', () => {
     const state = new AirportState(config);
     state.addFlight({
       flightNumber: 'INBOUND',

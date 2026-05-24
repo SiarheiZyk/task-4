@@ -6,10 +6,10 @@ export function registerGenerateSchedule(server: McpServer, state: AirportState)
   server.registerTool(
     'generate_schedule',
     {
-      title: 'Сгенерировать расписание аэропорта',
+      title: 'Generate airport schedule',
       description:
-        'Рассчитывает новое расписание для текущей очереди рейсов. ' +
-        'Полностью заменяет предыдущее расписание.',
+        'Computes a new schedule for the current flight queue. ' +
+        'Completely replaces the previous schedule.',
       inputSchema: {},
       annotations: { idempotentHint: true },
     },

@@ -6,10 +6,10 @@ export function registerBottleneck(server: McpServer, state: AirportState) {
   server.registerTool(
     'analyze_bottleneck',
     {
-      title: 'Анализ узких мест',
+      title: 'Analyze bottleneck',
       description:
-        'Находит самую длинную цепочку зависимых запланированных рейсов, ' +
-        'определяющую общую продолжительность расписания (критический путь).',
+        'Finds the longest chain of dependent scheduled flights ' +
+        'that drives the total schedule duration (critical path).',
       inputSchema: {},
       annotations: { readOnlyHint: true },
     },

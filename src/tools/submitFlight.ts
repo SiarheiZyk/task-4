@@ -6,26 +6,26 @@ export function registerSubmitFlight(server: McpServer, state: AirportState) {
   server.registerTool(
     'submit_flight',
     {
-      title: 'Подать новый рейс',
+      title: 'Submit a new flight',
       description:
-        'Регистрирует прилёт или вылет в системе ATC. ' +
-        'Возвращает подтверждение приёма. Не запускает планирование.',
+        'Registers an arrival or departure in the ATC system. ' +
+        'Returns acceptance confirmation. Does not trigger scheduling.',
       inputSchema: {
-        flightNumber: z.string().min(2).max(10).describe('Уникальный номер рейса, например SU1234'),
+        flightNumber: z.string().min(2).max(10).describe('Unique flight number, e.g. SU1234'),
         operationType: z
           .enum(['arrival', 'departure'])
-          .describe('Тип операции: arrival (прилёт) или departure (вылет)'),
-        priority: z.enum(['high', 'medium', 'low']).default('medium').describe('Приоритет рейса'),
+          .describe('Operation type: arrival or departure'),
+        priority: z.enum(['high', 'medium', 'low']).default('medium').describe('Flight priority'),
         dependencies: z
           .array(z.string())
           .default([])
-          .describe('Номера рейсов, которые должны быть обслужены раньше'),
+          .describe('Flight numbers that must complete before this flight'),
         minRunwayLengthMeters: z
           .number()
           .int()
           .min(0)
           .optional()
-          .describe('Требуемая минимальная длина ВПП в метрах'),
+          .describe('Minimum required runway length in meters'),
       },
     },
     async ({ flightNumber, operationType, priority, dependencies, minRunwayLengthMeters }) => {

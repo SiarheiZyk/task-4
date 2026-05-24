@@ -15,14 +15,14 @@ export class AirportState {
   private submissionCounter = 0;
 
   constructor(private readonly config: AirportConfig) {
-    // Инициализация полос
+    // Initialize runways
     for (let i = 1; i <= config.runwayCount; i++) {
       this.runways.push({
         id: `RW${String(i).padStart(2, '0')}`,
         lengthMeters: config.defaultRunwayLengthMeters,
       });
     }
-    // Инициализация гейтов
+    // Initialize gates
     for (let i = 1; i <= config.gateCount; i++) {
       this.gates.push({ id: `G${String(i).padStart(2, '0')}` });
     }
@@ -64,9 +64,9 @@ export class AirportState {
     const f = this.flights.get(num);
     if (!f) throw new Error(`Flight ${num} not found`);
     f.status = 'cancelled';
-    // Удаляем из расписания
+    // Remove from schedule
     this.lastSchedule = this.lastSchedule.filter((op) => op.flightNumber !== num);
-    // Зависимые рейсы возвращаем в pending
+    // Reset dependent flights to pending
     for (const other of this.flights.values()) {
       if (other.dependencies.includes(num) && other.status === 'scheduled') {
         other.status = 'pending';
@@ -77,7 +77,7 @@ export class AirportState {
 
   setSchedule(schedule: ScheduledOperation[]) {
     this.lastSchedule = schedule;
-    // Обновляем статусы рейсов
+    // Update flight statuses
     const scheduledNums = new Set(schedule.map((op) => op.flightNumber));
     for (const f of this.flights.values()) {
       if (f.status === 'cancelled') continue;

@@ -6,12 +6,12 @@ export function registerCancelFlight(server: McpServer, state: AirportState) {
   server.registerTool(
     'cancel_flight',
     {
-      title: 'Отменить рейс',
+      title: 'Cancel a flight',
       description:
-        'Отменяет рейс и помечает зависимые рейсы как требующие перепланирования. ' +
-        'После вызова рекомендуется снова запустить generate_schedule.',
+        'Cancels a flight and marks dependent flights for re-scheduling. ' +
+        'It is recommended to re-run generate_schedule after calling this.',
       inputSchema: {
-        flightNumber: z.string().describe('Номер отменяемого рейса'),
+        flightNumber: z.string().describe('Flight number to cancel'),
       },
       annotations: { destructiveHint: true },
     },

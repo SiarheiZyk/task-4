@@ -16,29 +16,29 @@ import { registerRunwaysResource } from './resources/runways.js';
 import { registerTimelineResource } from './resources/timeline.js';
 
 async function main() {
-  // Загрузка и валидация конфигурации
+  // Load and validate configuration
   const config = loadConfig();
   const state = new AirportState(config);
 
-  // Создание MCP-сервера
+  // Create MCP server
   const server = new McpServer({
     name: 'atc-mcp-server',
     version: '1.0.0',
   });
 
-  // Регистрация инструментов
+  // Register tools
   registerSubmitFlight(server, state);
   registerGenerateSchedule(server, state);
   registerGetStatus(server, state);
   registerCancelFlight(server, state);
   registerBottleneck(server, state);
 
-  // Регистрация ресурсов
+  // Register resources
   registerFlightQueueResource(server, state);
   registerRunwaysResource(server, state);
   registerTimelineResource(server, state);
 
-  // Подключение по stdio
+  // Connect via stdio
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('[atc-mcp] Server started via stdio');

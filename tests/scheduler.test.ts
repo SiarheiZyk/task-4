@@ -25,7 +25,7 @@ describe('Scheduler', () => {
     state = new AirportState(defaultConfig);
   });
 
-  it('расписывает простую очередь смешанных операций', () => {
+  it('schedules a simple mixed operations queue', () => {
     state.addFlight({ flightNumber: 'SU100', operationType: 'arrival',
       priority: 'high', dependencies: [] });
     state.addFlight({ flightNumber: 'SU200', operationType: 'departure',
@@ -39,13 +39,13 @@ describe('Scheduler', () => {
 
     expect(result.scheduled).toHaveLength(4);
     expect(result.unschedulable).toHaveLength(0);
-    // Высокий приоритет должен быть раньше
+    // High priority should be scheduled first
     const firstOp = result.scheduled
       .reduce((a, b) => a.startTime <= b.startTime ? a : b);
     expect(firstOp.flightNumber).toBe('SU100');
   });
 
-  it('не пересекает операции на одной полосе', () => {
+  it('does not overlap operations on the same runway', () => {
     for (let i = 1; i <= 5; i++) {
       state.addFlight({
         flightNumber: `SU${i}00`, operationType: 'departure',
@@ -67,7 +67,7 @@ describe('Scheduler', () => {
     }
   });
 
-  it('отклоняет рейс с требованием полосы больше доступного', () => {
+  it('rejects flight requiring longer runway than available', () => {
     state.addFlight({
       flightNumber: 'AC777', operationType: 'departure', priority: 'high',
       dependencies: [], runwayRequirements: { minLengthMeters: 5000 },
@@ -78,7 +78,7 @@ describe('Scheduler', () => {
     expect(result.unschedulable[0].reason).toMatch(/length/i);
   });
 
-  it('соблюдает зависимости рейсов', () => {
+  it('respects flight dependencies', () => {
     state.addFlight({ flightNumber: 'IN100', operationType: 'arrival',
       priority: 'medium', dependencies: [] });
     state.addFlight({ flightNumber: 'OUT200', operationType: 'departure',
@@ -93,7 +93,7 @@ describe('Scheduler', () => {
     );
   });
 
-  it('детерминирован: повторные вызовы дают идентичный результат', () => {
+  it('is deterministic: repeated calls produce identical results', () => {
     state.addFlight({ flightNumber: 'A1', operationType: 'arrival',
       priority: 'medium', dependencies: [] });
     state.addFlight({ flightNumber: 'B2', operationType: 'departure',
@@ -106,7 +106,7 @@ describe('Scheduler', () => {
     expect(JSON.stringify(r1.scheduled)).toBe(JSON.stringify(r2.scheduled));
   });
 
-  it('отмена рейса убирает его из расписания', () => {
+  it('cancellation removes flight from schedule', () => {
     state.addFlight({ flightNumber: 'X1', operationType: 'departure',
       priority: 'medium', dependencies: [] });
     state.addFlight({ flightNumber: 'X2', operationType: 'departure',
@@ -117,11 +117,11 @@ describe('Scheduler', () => {
 
     expect(result.scheduled.find((op) => op.flightNumber === 'X1')).toBeUndefined();
     expect(state.getFlight('X1')?.status).toBe('cancelled');
-    // X2 теперь не может быть запланирован (его зависимость отменена)
+    // X2 cannot be scheduled now (its dependency was cancelled)
     expect(state.getFlight('X2')?.status).toBe('unschedulable');
   });
 
-  it('bottleneck находит самую длинную цепочку зависимостей', () => {
+  it('bottleneck finds the longest dependency chain', () => {
     state.addFlight({ flightNumber: 'A', operationType: 'arrival',
       priority: 'medium', dependencies: [] });
     state.addFlight({ flightNumber: 'B', operationType: 'departure',
@@ -129,7 +129,7 @@ describe('Scheduler', () => {
     state.addFlight({ flightNumber: 'C', operationType: 'arrival',
       priority: 'medium', dependencies: ['B'] });
     state.addFlight({ flightNumber: 'D', operationType: 'departure',
-      priority: 'medium', dependencies: [] }); // независимый
+      priority: 'medium', dependencies: [] }); // independent
 
     generateSchedule(state);
     const result = findBottleneck(state);

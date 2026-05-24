@@ -3,19 +3,19 @@ export type Priority = 'high' | 'medium' | 'low';
 export type FlightStatus = 'pending' | 'scheduled' | 'cancelled' | 'unschedulable';
 
 export interface RunwayRequirements {
-  minLengthMeters?: number; // минимальная требуемая длина
+  minLengthMeters?: number;
 }
 
 export interface Flight {
   flightNumber: string;
   operationType: OperationType;
   priority: Priority;
-  dependencies: string[]; // номера рейсов, которые должны быть раньше
+  dependencies: string[];
   runwayRequirements?: RunwayRequirements;
-  // Внутренние поля (заполняются сервером):
+  // Internal fields (set by server):
   status: FlightStatus;
   unschedulableReason?: string;
-  submittedAt: number; // порядок поступления для tie-break
+  submittedAt: number;
 }
 
 export interface Runway {
@@ -32,7 +32,7 @@ export interface ScheduledOperation {
   operationType: OperationType;
   runwayId: string;
   gateId?: string;
-  startTime: number; // секунды от t=0 (начало планирования)
+  startTime: number;
   endTime: number;
 }
 
@@ -46,8 +46,6 @@ export interface AirportConfig {
   gateTurnaroundSec: number;
   dependencyBufferSec: number;
   maxHorizonSec: number;
-  // Длина "стандартной" полосы (для проверки runway requirements)
   defaultRunwayLengthMeters: number;
-  // Длительность операции на полосе
   operationDurationSec: number;
 }
